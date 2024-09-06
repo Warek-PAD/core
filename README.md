@@ -62,7 +62,16 @@ DTO and then serialized in Protobuf.
   - /account-data (WebSocket)
 
 The /account-data WS endpoint works as a subscription to account data, in JSON format, the client can subscribe to balance, currency, block-card, unblock-card topics and receive updates.
-An example of client message:
+Client message schema: 
+```ts
+{
+  type: "subscribe" | "unsubscribe";
+  payload: {
+    topic: "balance" | "currency" | "block-card" | "unblock-card";
+  };
+}
+```
+Example of client message:
 ```json
 {
   "type": "subscribe",
@@ -72,12 +81,24 @@ An example of client message:
 }
 ```
 
-And receive the following updates:
+MicroService update schema: 
+```ts
+{
+  type: "update";
+  payload: {
+    topic: "balance" | "currency" | "block-card" | "unblock-card";
+    oldValue: any;
+    newValue: any;
+    unixTimestamp: number;
+  };
+}
+```
+Example of update:
 ```json
 {
   "type": "update",
   "payload": {
-    "field": "balance",
+    "topic": "balance",
     "oldValue": 12345,
     "newValue": 20000,
     "unixTimestamp": 1234567890
