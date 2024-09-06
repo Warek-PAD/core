@@ -14,7 +14,7 @@ expense tracking, providing data about the expenses on monthly and yearly basis.
 Banking is a critical component of any society, and is tightly involved in any kind of business activities and money flow. It is extremely important to be reliable,
 fault-tolerant and fast. If it had a classic monolithic architecture, the entire system would risk shutting down, and create major problems in economy as well at global level
 as per person. If a microservice falls otherwise, it can either be quickly restarted, or be disconnected and let other instances of the same service seamlessly handle the request (load balancing). 
-Also, the critically loaded services can be horizontally scaled, ensuring performance and thus reliability of the whole system. Also microservices allow separate teams to
+Also, the critically loaded services can be horizontally scaled, ensuring performance and thus reliability of the whole system. Also, microservices allow separate teams to
 develop some functionality, allowing more efficient how improvements and adding new features to the solution.
 
 ### Similar projects 
@@ -43,8 +43,8 @@ The two microservices provide enough functionality to support user authenticatio
   - Service discovery - Python 3/Flask framework
 
 ### Communication patterns
-Microservices are communicating via gRPC, a high-performance reliable RPC framework (RESTful API under the hood, using HTTP/2). The messages are encoding using Protocol Buffers data format, which is very effective at serializing, especially small
-messages. The communication is made in a synchronous pattern. Account service exposes a WebSocket endpoint for bidirectional data flow, using JSON as data format.
+Microservices are communicating via gRPC, a high-performance reliable RPC framework (RESTful API under the hood, using HTTP/2). The messages are encoding using Protocol Buffers data format, which is very effective at serializing, 
+especially small messages. The communication is made in a synchronous pattern. Account service exposes a WebSocket endpoint for bidirectional data flow, using JSON as data format.
 
 ### Data management
 Data is transmitted in Protocol Buffers format between microservices via gRPC. Each service has its own database with an ORM model (TypeORM for JS, Entity Framework for C#), each model before transmission will be transformed to a 
