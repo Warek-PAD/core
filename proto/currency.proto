@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+enum Currency {
+  MDL = 0;
+  USD = 1;
+  EUR = 2;
+}

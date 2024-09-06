@@ -1,0 +1,33 @@
+name: pad-ebank
+
+
+services:
+  account-service-db:
+    image: postgres:latest
+    restart: no
+    ports:
+      - ${ACCOUNT_SERVICE_DB_PORT}-5432
+    volumes:
+      - account-service-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${ACCOUNT_SERVICE_DB_NAME}
+      POSTGRES_USER: ${ACCOUNT_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+
+  transaction-service-db:
+    image: postgres:latest
+    restart: no
+    ports:
+      - ${TRANSACTION_SERVICE_DB_PORT}:5432
+    volumes:
+      - transaction-service-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${TRANSACTION_SERVICE_DB_NAME}
+      POSTGRES_USER: ${TRANSACTION_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${TRANSACTION_SERVICE_DB_PASSWORD}
+
+
+volumes:
+  account-service-db-data:
+  transaction-service-db-data:
+
