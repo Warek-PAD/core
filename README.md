@@ -8,6 +8,9 @@ architectural patterns like circuit breaker, gateway, service discovery, load ba
 The platform provides the functionality to have an account, with a credit card bound to it, with an amount of currency, transfers from one account to another, and
 expense tracking, providing data about the expenses on monthly and yearly basis.
 
+**Open banking** - The concept of sharing customer data and financial information to third party services via APIs. In an open banking infrastructure, banks share customer data securely and efficiently with authorised third-party developers, 
+fintech companies, and other financial institutions. Data sharing allows for the developing of new and enhanced financial products and services, ultimately benefiting consumers by offering more choices, improved user experiences, and often more competitive pricing.
+
 
 ## Details
 ### Why microservices
@@ -127,3 +130,4 @@ horizontal scaling functionality and automatically restarting fallen containers.
   - [Which Software Architecture is Used for Banking?](https://medium.com/@linnea.paul.873/which-software-architecture-is-used-for-banking-5c3b251c59d0)
   - [Advantages of microservices and disadvantages to know](https://www.atlassian.com/microservices/cloud-computing/advantages-of-microservices)
   - [What is a bank](https://www.imf.org/external/pubs/ft/fandd/2012/03/basics.htm)
+  - [Open Banking: How It is Driving Innovation and Collaboration in the Banking Sector](https://kindgeek.com/blog/post/open-banking-how-it-is-driving-innovation-and-collaboration-in-the-banking-sector)
