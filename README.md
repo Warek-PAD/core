@@ -50,22 +50,48 @@ especially small messages. The communication is made in a synchronous pattern. A
 Data is transmitted in Protocol Buffers format between microservices via gRPC. Each service has its own database with an ORM model (TypeORM for JS, Entity Framework for C#), each model before transmission will be transformed to a 
 DTO and then serialized in Protobuf.
 
-Account service will have the following endpoints:
-  - /AccountService/Login
-  - /AccountService/Register
-  - /AccountService/GetProfile
-  - /AccountService/AddCurrency
-  - /AccountService/CanPerformTransaction
-  - /AccountService/ChangeCurrency
-  - /AccountService/BlockCard
-  - /AccountService/UnblockCard
+#### Account service endpoints:
+  - /AccountService/Login (gRPC)
+  - /AccountService/Register (gRPC)
+  - /AccountService/GetProfile (gRPC)
+  - /AccountService/AddCurrency (gRPC)
+  - /AccountService/CanPerformTransaction (gRPC)
+  - /AccountService/ChangeCurrency (gRPC)
+  - /AccountService/BlockCard (gRPC)
+  - /AccountService/UnblockCard (gRPC)
+  - /account-data (WebSocket)
 
-Transaction service endpoints:
-  - /TransactionService/TransferCurrency
-  - /TransactionService/WithdrawCurrency
-  - /TransactionService/DepositCurrency
-  - /TransactionService/GetHistory
-  - /TransactionService/CancelTransaction
+The /account-data WS endpoint works as a subscription to account data, in JSON format, the client can subscribe to balance, currency, block-card, unblock-card topics and receive updates.
+An example of client message:
+```json
+{
+  "type": "subscribe",
+  "payload": {
+    "topic": "balance"
+  }
+}
+```
+
+And receive the following updates:
+```json
+{
+  "type": "update",
+  "payload": {
+    "field": "balance",
+    "oldValue": 12345,
+    "newValue": 20000,
+    "unixTimestamp": 1234567890
+  }
+}
+```
+This endpoint is a convenient way to subscribe to updates, for example, in UI or an external service.
+
+#### Transaction service endpoints:
+  - /TransactionService/TransferCurrency (gRPC)
+  - /TransactionService/WithdrawCurrency (gRPC)
+  - /TransactionService/DepositCurrency (gRPC)
+  - /TransactionService/GetHistory (gRPC)
+  - /TransactionService/CancelTransaction (gRPC)
 
 The endpoint definitions as well as the accepted parameters and the return types can be found in **proto** directory.
 
