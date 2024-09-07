@@ -21,8 +21,8 @@ Also, the critically loaded services can be horizontally scaled, ensuring perfor
 develop some functionality, allowing more efficient how improvements and adding new features to the solution.
 
 ### Similar projects 
-All major banking systems are using microservice architecture. It is impossible to provide a concrete example because the systems are closed-source and information about the system
-architecture is not public. The majority of information about banking systems are provided by domain workers.
+All major banking systems are using microservices architecture. PayPal is an example of microservices architecture, it is a global eCommerce platform allowing payments and money transfers, with more than 2500 microservices and 700 APIs, 344,538 companies using 
+it as a service simultaneously, having a global market share of 35.83%. PayPal uses RESTful endpoints for microservices and JSON as format.
 
 ### Service boundaries
   - Account service - handling the user accounts and the associated credit cards. Has the functionality to create an account, login, insert/check balance details, exchange one currency to another within a card,
@@ -131,3 +131,5 @@ horizontal scaling functionality and automatically restarting fallen containers.
   - [Advantages of microservices and disadvantages to know](https://www.atlassian.com/microservices/cloud-computing/advantages-of-microservices)
   - [What is a bank](https://www.imf.org/external/pubs/ft/fandd/2012/03/basics.htm)
   - [Open Banking: How It is Driving Innovation and Collaboration in the Banking Sector](https://kindgeek.com/blog/post/open-banking-how-it-is-driving-innovation-and-collaboration-in-the-banking-sector)
+  - [PayPal’s Microservices Architecture Journey](https://medium.com/@dmosyan/paypals-microservices-architecture-journey-e085452471d0)
+  - [PayPal Market Share](https://6sense.com/tech/payment-management/paypal-market-share)
