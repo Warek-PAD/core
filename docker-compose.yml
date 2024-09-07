@@ -1,18 +1,33 @@
 name: pad-ebank
 
-
 services:
   account-service-db:
     image: postgres:latest
     restart: no
     ports:
-      - ${ACCOUNT_SERVICE_DB_PORT}-5432
+      - ${ACCOUNT_SERVICE_DB_PORT}:5432
     volumes:
       - account-service-db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${ACCOUNT_SERVICE_DB_NAME}
       POSTGRES_USER: ${ACCOUNT_SERVICE_DB_USER}
       POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+
+  account-service:
+    depends_on:
+      - account-service-db
+    build:
+      context: ${ACCOUNT_SERVICE_PATH}
+      dockerfile: ${ACCOUNT_SERVICE_DOCKERFILE}
+    restart: no
+    ports:
+      - ${ACCOUNT_SERVICE_PORT}:${ACCOUNT_SERVICE_PORT}
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${ACCOUNT_SERVICE_PORT}
+    volumes:
+      - ${ACCOUNT_SERVICE_PATH}/:/app/
+
 
   transaction-service-db:
     image: postgres:latest
@@ -25,7 +40,6 @@ services:
       POSTGRES_DB: ${TRANSACTION_SERVICE_DB_NAME}
       POSTGRES_USER: ${TRANSACTION_SERVICE_DB_USER}
       POSTGRES_PASSWORD: ${TRANSACTION_SERVICE_DB_PASSWORD}
-
 
 volumes:
   account-service-db-data:
