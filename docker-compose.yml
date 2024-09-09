@@ -9,9 +9,11 @@ services:
     volumes:
       - account-service-db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${ACCOUNT_SERVICE_DB_NAME}
+      POSTGRES_DB: account_db
       POSTGRES_USER: ${ACCOUNT_SERVICE_DB_USER}
       POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+    networks:
+      - ebank-network
 
   account-service:
     depends_on:
@@ -21,13 +23,13 @@ services:
       dockerfile: ${ACCOUNT_SERVICE_DOCKERFILE}
     restart: no
     ports:
-      - ${ACCOUNT_SERVICE_PORT}:${ACCOUNT_SERVICE_PORT}
+      - "3000:3000"
     environment:
-      NODE_ENV: ${NODE_ENV}
-      PORT: ${ACCOUNT_SERVICE_PORT}
+      PORT: 3000
     volumes:
       - ${ACCOUNT_SERVICE_PATH}/:/app/
-
+    networks:
+      - ebank-network
 
   transaction-service-db:
     image: postgres:latest
@@ -37,11 +39,28 @@ services:
     volumes:
       - transaction-service-db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${TRANSACTION_SERVICE_DB_NAME}
+      POSTGRES_DB: transaction_db
       POSTGRES_USER: ${TRANSACTION_SERVICE_DB_USER}
       POSTGRES_PASSWORD: ${TRANSACTION_SERVICE_DB_PASSWORD}
+    networks:
+      - ebank-network
+
+  shared-cache:
+    image: redis:7.4
+    restart: no
+    ports:
+      - ${CACHE_PORT}:6379
+    volumes:
+      - cache-data:/data
+    environment:
+      - REDIS_PASSWORD=${CACHE_PASSWORD}
+    networks:
+      ebank-network:
 
 volumes:
   account-service-db-data:
   transaction-service-db-data:
+  cache-data:
 
+networks:
+  ebank-network:

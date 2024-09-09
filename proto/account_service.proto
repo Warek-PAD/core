@@ -23,21 +23,20 @@ message LoginCredentials {
 message AuthCredentials {
   string email = 1;
   string full_name = 2;
-  Currency currency = 3;
-  AuthError auth_error = 4;
+  AuthStatus auth_status = 4;
 }
 
 message RegisterCredentials {
   string email = 1;
   string password = 2;
   string full_name = 3;
-  Currency currency = 4;
 }
 
-enum AuthError {
-  USER_ALREADY_EXISTS = 0;
-  INVALID_PASSWORD = 1;
-  USER_NOT_FOUND = 2;
+enum AuthStatus {
+  SUCCESS = 0;
+  USER_ALREADY_EXISTS = 1;
+  USER_NOT_FOUND = 3;
+  INVALID_CREDENTIALS = 2;
 }
 
 message GetProfileOptions {
@@ -47,12 +46,10 @@ message GetProfileOptions {
 message Profile {
   string email = 1;
   string full_name = 2;
-  string password = 3;
-  Currency currency = 4;
 }
 
 message AddCurrencyOptions {
-  Currency currency = 1;
+  shared.Currency currency = 1;
   int32 amount = 2;
 }
 
@@ -61,7 +58,7 @@ message AddCurrencyResult {
 }
 
 message TransactionData {
-  Currency currency = 1;
+  shared.Currency currency = 1;
   int32 amount = 2;
   string email = 3;
 }
@@ -71,7 +68,7 @@ message CanPerformTransactionResult {
 }
 
 message ChangeCurrencyOptions {
-  Currency currency = 1;
+  shared.Currency currency = 1;
 }
 
 message ChangeCurrencyResult {

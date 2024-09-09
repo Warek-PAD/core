@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package shared;
+
 enum Currency {
   MDL = 0;
   USD = 1;

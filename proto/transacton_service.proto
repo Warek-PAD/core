@@ -13,7 +13,7 @@ service TransactionService {
 }
 
 message TransferData {
-  Currency currency = 1;
+  shared.Currency currency = 1;
   int32 amount = 2;
   string source_card_code = 3;
   string target_card_code = 4;
@@ -24,7 +24,7 @@ message TransferResult {
 }
 
 message DepositData {
-  Currency currency = 1;
+  shared.Currency currency = 1;
   int32 amount = 2;
   string card_code = 3;
 }
@@ -34,7 +34,7 @@ message DepositResult {
 }
 
 message WithdrawData {
-  Currency currency = 1;
+  shared.Currency currency = 1;
   int32 amount = 2;
   string card_code = 3;
 }
