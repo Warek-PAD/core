@@ -62,50 +62,49 @@ DTO and then serialized in Protobuf.
   - /AccountService/ChangeCurrency (gRPC)
   - /AccountService/BlockCard (gRPC)
   - /AccountService/UnblockCard (gRPC)
-  - /account-data (WebSocket)
+  - /account (WebSocket)
+  - /account/balance (WebSocket)
+  - /account/currency (WebSocket)
+  - /account/block-status (WebSocket)
 
-The /account-data WS endpoint works as a subscription to account data, in JSON format, the client can subscribe to balance, currency, block-card, unblock-card topics and receive updates.
-Client message schema: 
+The /account WS endpoint works as a subscription lobby to account data details, in JSON format, the client can subscribe to balance, currency, block-card, unblock-card topics and receive updates.
+Client message schema to /account: 
 ```ts
 {
-  type: "subscribe" | "unsubscribe";
-  payload: {
-    topic: "balance" | "currency" | "block-card" | "unblock-card";
-  };
+  subscribeTo: "balance" | "currency" | "block-status";
+  auth: {
+    email: string;
+    password: string;
+  }
 }
 ```
 Example of client message:
 ```json
 {
-  "type": "subscribe",
-  "payload": {
-    "topic": "balance"
+  "subscribeTo": "balance",
+  "auth": {
+    "email": "test@example.com",
+    "password": "test"
   }
 }
 ```
 
-MicroService update schema: 
+MicroService response schema: 
 ```ts
 {
-  type: "update";
-  payload: {
-    topic: "balance" | "currency" | "block-card" | "unblock-card";
-    oldValue: any;
-    newValue: any;
-    unixTimestamp: number;
+  redirectTo: "/account/balance" | "/account/currency" | "/account/block-status";
+  error?: {
+    code: number (Http Status Code);
+    message: string;
   };
 }
 ```
-Example of update:
+Example of update from an endpoint (balance):
 ```json
 {
-  "type": "update",
-  "payload": {
-    "topic": "balance",
-    "oldValue": 12345,
-    "newValue": 20000,
-    "unixTimestamp": 1234567890
-  }
+  "oldValue": 12345,
+  "newValue": 20000,
+  "unixTimestamp": 1234567890
 }
 ```
 This endpoint is a convenient way to subscribe to updates, for example, in UI or an external service.
