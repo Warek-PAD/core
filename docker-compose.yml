@@ -24,6 +24,7 @@ services:
     restart: no
     ports:
       - "3000:3000"
+      - "3001:3001"
     environment:
       PORT: 3000
     volumes:
@@ -46,7 +47,7 @@ services:
       - ebank-network
 
   shared-cache:
-    image: redis:7.4
+    image: redis
     restart: no
     ports:
       - ${CACHE_PORT}:6379
