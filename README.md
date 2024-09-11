@@ -157,6 +157,8 @@ horizontal scaling functionality and automatically restarting fallen containers.
 ## Service repositories
   - [Account service](https://github.com/Warek01/pad-ebank-account-service)
   - [Transaction service](https://github.com/Warek01/pad-ebank-transaction-service)
+  - [Service discovery service](https://github.com/Warek01/pad-ebank-service-discovery)
+  - [API Gateway service](https://github.com/Warek01/pad-ebank-api-gateway)
 
 ---
 

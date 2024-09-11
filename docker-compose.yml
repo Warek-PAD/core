@@ -25,10 +25,22 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
-    environment:
-      PORT: 3000
     volumes:
       - ${ACCOUNT_SERVICE_PATH}/:/app/
+    networks:
+      - ebank-network
+
+  transaction-service:
+    depends_on:
+      - transaction-service-db
+    build:
+      context: ${TRANSACTION_SERVICE_PATH}
+      dockerfile: ${TRANSACTION_SERVICE_DOCKERFILE}
+    restart: no
+    ports:
+      - "4000:3000"
+    volumes:
+      - ${TRANSACTION_SERVICE_PATH}/:/app/
     networks:
       - ebank-network
 
