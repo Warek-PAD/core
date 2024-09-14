@@ -23,8 +23,9 @@ services:
       dockerfile: ${ACCOUNT_SERVICE_DOCKERFILE}
     restart: no
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "3000:3000" # http
+      - "3100:3100" # grpc
+      - "3200:3200" # ws
     volumes:
       - ${ACCOUNT_SERVICE_PATH}/:/app/
     networks:
@@ -38,7 +39,8 @@ services:
       dockerfile: ${TRANSACTION_SERVICE_DOCKERFILE}
     restart: no
     ports:
-      - "4000:3000"
+      - "4000:3000" # http
+      - "4100:3100" # grpc
     volumes:
       - ${TRANSACTION_SERVICE_PATH}/:/app/
     networks:
