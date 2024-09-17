@@ -70,7 +70,20 @@ services:
     environment:
       - REDIS_PASSWORD=${CACHE_PASSWORD}
     networks:
-      ebank-network:
+      - ebank-network
+
+  service-discovery:
+    build:
+      context: ${SERVICE_DISCOVERY_PATH}
+      dockerfile: ${SERVICE_DISCOVERY_DOCKERFILE}
+    ports:
+      - "5000:3000"
+    volumes:
+      - ${SERVICE_DISCOVERY_PATH}/:/app/
+    networks:
+      - ebank-network
+    depends_on:
+      - shared-cache
 
 volumes:
   account-service-db-data:
