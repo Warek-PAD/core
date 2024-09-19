@@ -80,6 +80,7 @@ services:
       - "5000:3000"
     volumes:
       - ${SERVICE_DISCOVERY_PATH}/:/app/
+    restart: no
     networks:
       - ebank-network
     depends_on:
