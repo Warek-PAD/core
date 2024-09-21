@@ -22,12 +22,12 @@ services:
       context: ${ACCOUNT_SERVICE_PATH}
       dockerfile: ${ACCOUNT_SERVICE_DOCKERFILE}
     restart: no
-    ports:
-      - "3000:3000" # http
-      - "3100:3100" # grpc
-      - "3200:3200" # ws
+    scale: 1
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 1
     volumes:
-      - ${ACCOUNT_SERVICE_PATH}/:/app/
+      - ${ACCOUNT_SERVICE_PATH}/src/:/app/src/
     networks:
       - ebank-network
 
@@ -38,11 +38,12 @@ services:
       context: ${TRANSACTION_SERVICE_PATH}
       dockerfile: ${TRANSACTION_SERVICE_DOCKERFILE}
     restart: no
-    ports:
-      - "4000:3000" # http
-      - "4100:3100" # grpc
+    scale: 1
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 1
     volumes:
-      - ${TRANSACTION_SERVICE_PATH}/:/app/
+      - ${TRANSACTION_SERVICE_PATH}/src/:/app/src/
     networks:
       - ebank-network
 
@@ -78,6 +79,9 @@ services:
       dockerfile: ${SERVICE_DISCOVERY_DOCKERFILE}
     ports:
       - "5000:3000"
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 1
     volumes:
       - ${SERVICE_DISCOVERY_PATH}/:/app/
     restart: no
