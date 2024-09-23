@@ -3,9 +3,16 @@ name: pad-ebank
 services:
   account-service-db:
     image: postgres:latest
-    restart: no
-    ports:
-      - ${ACCOUNT_SERVICE_DB_PORT}:5432
+    scale: 1
+    mem_limit: 64M
+    mem_reservation: 32M
+    cpus: 1
+    healthcheck:
+      test: pg_isready -U ${ACCOUNT_SERVICE_DB_USER} -d account_db
+      interval: 10s
+      start_period: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - account-service-db-data:/var/lib/postgresql/data
     environment:
@@ -18,6 +25,7 @@ services:
   account-service:
     depends_on:
       - account-service-db
+      - service-discovery
     build:
       context: ${ACCOUNT_SERVICE_PATH}
       dockerfile: ${ACCOUNT_SERVICE_DOCKERFILE}
@@ -26,6 +34,12 @@ services:
     mem_limit: 512M
     mem_reservation: 256M
     cpus: 1
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/health || exit 1
     volumes:
       - ${ACCOUNT_SERVICE_PATH}/src/:/app/src/
     networks:
@@ -34,6 +48,7 @@ services:
   transaction-service:
     depends_on:
       - transaction-service-db
+      - service-discovery
     build:
       context: ${TRANSACTION_SERVICE_PATH}
       dockerfile: ${TRANSACTION_SERVICE_DOCKERFILE}
@@ -42,6 +57,13 @@ services:
     mem_limit: 512M
     mem_reservation: 256M
     cpus: 1
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/health || exit 1
+
     volumes:
       - ${TRANSACTION_SERVICE_PATH}/src/:/app/src/
     networks:
@@ -50,8 +72,17 @@ services:
   transaction-service-db:
     image: postgres:latest
     restart: no
-    ports:
-      - ${TRANSACTION_SERVICE_DB_PORT}:5432
+    scale: 1
+    mem_limit: 64M
+    mem_reservation: 32M
+    cpus: 1
+    healthcheck:
+      test: pg_isready -U ${TRANSACTION_SERVICE_DB_USER} -d transaction_db
+      interval: 10s
+      start_period: 10s
+      timeout: 5s
+      retries: 5
+
     volumes:
       - transaction-service-db-data:/var/lib/postgresql/data
     environment:
@@ -64,6 +95,16 @@ services:
   shared-cache:
     image: redis
     restart: no
+    scale: 1
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 1
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      start_period: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - ${CACHE_PORT}:6379
     volumes:
@@ -77,11 +118,16 @@ services:
     build:
       context: ${SERVICE_DISCOVERY_PATH}
       dockerfile: ${SERVICE_DISCOVERY_DOCKERFILE}
-    ports:
-      - "5000:3000"
+    scale: 1
     mem_limit: 512M
     mem_reservation: 256M
     cpus: 1
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/ || exit 1
     volumes:
       - ${SERVICE_DISCOVERY_PATH}/:/app/
     restart: no
