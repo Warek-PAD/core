@@ -2,11 +2,13 @@ name: pad-ebank
 
 services:
   account-service-db:
-    image: postgres:latest
+    image: postgres:17-alpine
     scale: 1
     mem_limit: 64M
     mem_reservation: 32M
     cpus: 1
+    ports:
+      - ${ACCOUNT_SERVICE_DB_PORT}:5432
     healthcheck:
       test: pg_isready -U ${ACCOUNT_SERVICE_DB_USER} -d account_db
       interval: 10s
@@ -29,11 +31,17 @@ services:
     build:
       context: ${ACCOUNT_SERVICE_PATH}
       dockerfile: ${ACCOUNT_SERVICE_DOCKERFILE}
+    env_file:
+      - ${ACCOUNT_SERVICE_ENV_PATH}
     restart: no
     scale: 1
     mem_limit: 512M
     mem_reservation: 256M
     cpus: 1
+    ports:
+      - "3000:3000"
+      - "3100:3100"
+      - "3200:3200"
     healthcheck:
       interval: 30s
       retries: 2
@@ -49,40 +57,46 @@ services:
     depends_on:
       - transaction-service-db
       - service-discovery
+      - account-service
     build:
       context: ${TRANSACTION_SERVICE_PATH}
       dockerfile: ${TRANSACTION_SERVICE_DOCKERFILE}
+    env_file:
+      - ${TRANSACTION_SERVICE_ENV_PATH}
     restart: no
     scale: 1
     mem_limit: 512M
     mem_reservation: 256M
     cpus: 1
+    ports:
+      - "4000:3000"
+      - "4100:3100"
     healthcheck:
       interval: 30s
       retries: 2
       timeout: 30s
       start_period: 60s
       test: curl --fail http://localhost:3000/health || exit 1
-
     volumes:
       - ${TRANSACTION_SERVICE_PATH}/src/:/app/src/
     networks:
       - ebank-network
 
   transaction-service-db:
-    image: postgres:latest
+    image: postgres:17-alpine
     restart: no
     scale: 1
     mem_limit: 64M
     mem_reservation: 32M
     cpus: 1
+    ports:
+      - ${TRANSACTION_SERVICE_DB_PORT}:5432
     healthcheck:
       test: pg_isready -U ${TRANSACTION_SERVICE_DB_USER} -d transaction_db
       interval: 10s
       start_period: 10s
       timeout: 5s
       retries: 5
-
     volumes:
       - transaction-service-db-data:/var/lib/postgresql/data
     environment:
@@ -93,7 +107,7 @@ services:
       - ebank-network
 
   shared-cache:
-    image: redis
+    image: redis:alpine
     restart: no
     scale: 1
     mem_limit: 512M
@@ -122,6 +136,10 @@ services:
     mem_limit: 512M
     mem_reservation: 256M
     cpus: 1
+    env_file:
+      - ${SERVICE_DISCOVERY_ENV_PATH}
+    ports:
+      - "5000:3000"
     healthcheck:
       interval: 30s
       retries: 2
@@ -136,10 +154,46 @@ services:
     depends_on:
       - shared-cache
 
+  gateway:
+    build:
+      context: ${GATEWAY_PATH}
+      dockerfile: ${GATEWAY_DOCKERFILE}
+    scale: 1
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 1
+    env_file:
+      - ${GATEWAY_ENV_PATH}
+    ports:
+      - "7000:3000"
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/api/health || exit 1
+    volumes:
+      - ${GATEWAY_PATH}/:/app/
+    restart: no
+    networks:
+      - ebank-network
+    depends_on:
+      - shared-cache
+      - service-discovery
+      - account-service
+      - transaction-service
+
 volumes:
   account-service-db-data:
+    driver: local
   transaction-service-db-data:
+    driver: local
   cache-data:
+    driver: local
 
 networks:
   ebank-network:
+    driver: bridge
+    attachable: true
+    enable_ipv6: false
+    internal: false
