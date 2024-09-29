@@ -1,0 +1,182 @@
+name: pad-ebank-prod
+
+services:
+  account-service-db:
+    image: postgres:17-alpine
+    scale: 1
+    mem_limit: 128M
+    mem_reservation: 32M
+    cpus: 1
+    ports:
+      - ${ACCOUNT_SERVICE_DB_PORT}:5432
+    healthcheck:
+      test: pg_isready -U ${ACCOUNT_SERVICE_DB_USER} -d account_db
+      interval: 10s
+      start_period: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: account_db
+      POSTGRES_USER: ${ACCOUNT_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+    networks:
+      - ebank-network-prod
+
+  account-service:
+    depends_on:
+      - account-service-db
+      - service-discovery
+    build:
+      context: ${ACCOUNT_SERVICE_PATH}
+      dockerfile: Dockerfile.production
+    env_file:
+      - ${ACCOUNT_SERVICE_ENV_PATH}
+    restart: no
+    scale: 5
+    mem_limit: 256M
+    mem_reservation: 64M
+    cpus: 1
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/health || exit 1
+    networks:
+      - ebank-network-prod
+
+  transaction-service:
+    depends_on:
+      - transaction-service-db
+      - service-discovery
+      - account-service
+    build:
+      context: ${TRANSACTION_SERVICE_PATH}
+      dockerfile: Dockerfile.production
+    env_file:
+      - ${TRANSACTION_SERVICE_ENV_PATH}
+    restart: no
+    scale: 3
+    mem_limit: 256M
+    mem_reservation: 64M
+    cpus: 1
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/health || exit 1
+    networks:
+      - ebank-network-prod
+
+  transaction-service-db:
+    image: postgres:17-alpine
+    restart: no
+    scale: 1
+    mem_limit: 128M
+    mem_reservation: 32M
+    cpus: 1
+    ports:
+      - ${TRANSACTION_SERVICE_DB_PORT}:5432
+    healthcheck:
+      test: pg_isready -U ${TRANSACTION_SERVICE_DB_USER} -d transaction_db
+      interval: 10s
+      start_period: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - transaction-service-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: transaction_db
+      POSTGRES_USER: ${TRANSACTION_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${TRANSACTION_SERVICE_DB_PASSWORD}
+    networks:
+      - ebank-network-prod
+
+  shared-cache:
+    image: redis:alpine
+    restart: no
+    scale: 1
+    mem_limit: 128M
+    mem_reservation: 32M
+    cpus: 1
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      start_period: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - ${CACHE_PORT}:6379
+    volumes:
+      - cache-data:/data
+    environment:
+      - REDIS_PASSWORD=${CACHE_PASSWORD}
+    networks:
+      - ebank-network-prod
+
+  service-discovery:
+    build:
+      context: ${SERVICE_DISCOVERY_PATH}
+      dockerfile: Dockerfile.production
+    restart: no
+    scale: 1
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 1
+    env_file:
+      - ${SERVICE_DISCOVERY_ENV_PATH}
+    ports:
+      - "5000:3000"
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/ || exit 1
+    networks:
+      - ebank-network-prod
+    depends_on:
+      - shared-cache
+
+  gateway:
+    build:
+      context: ${GATEWAY_PATH}
+      dockerfile: Dockerfile.production
+    restart: no
+    scale: 1
+    mem_limit: 256M
+    mem_reservation: 128M
+    cpus: 1
+    ports:
+      - "7000:3000"
+    env_file:
+      - ${GATEWAY_ENV_PATH}
+    healthcheck:
+      interval: 30s
+      retries: 2
+      timeout: 30s
+      start_period: 60s
+      test: curl --fail http://localhost:3000/api/health || exit 1
+    networks:
+      - ebank-network-prod
+    depends_on:
+      - shared-cache
+      - service-discovery
+      - account-service
+      - transaction-service
+
+volumes:
+  account-service-db-data:
+    driver: local
+  transaction-service-db-data:
+    driver: local
+  cache-data:
+    driver: local
+
+networks:
+  ebank-network-prod:
+    driver: bridge
+    attachable: true
+    enable_ipv6: false
+    internal: false

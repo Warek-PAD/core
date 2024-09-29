@@ -55,7 +55,7 @@ and JSON as format.
 The two microservices provide enough functionality to support user authentication, having balance on their online card
 and transferring from one card to another and make payments.
 
-![System architecture](./images/pad-lab-1-services.webp)
+![System architecture](docs/images/pad-lab-1-services.webp)
 
 ### Technology stack
 
@@ -171,3 +171,7 @@ horizontal scaling functionality and automatically restarting fallen containers.
 - [Open Banking: How It is Driving Innovation and Collaboration in the Banking Sector](https://kindgeek.com/blog/post/open-banking-how-it-is-driving-innovation-and-collaboration-in-the-banking-sector)
 - [PayPal’s Microservices Architecture Journey](https://medium.com/@dmosyan/paypals-microservices-architecture-journey-e085452471d0)
 - [PayPal Market Share](https://6sense.com/tech/payment-management/paypal-market-share)
+
+## Documentation
+
+- [Usage Guide](docs/USAGE.md)
