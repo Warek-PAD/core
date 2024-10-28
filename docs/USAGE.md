@@ -29,3 +29,6 @@ You can see usage metrics using `docker stats` for full stats or `./stats.sh` fo
 
 ### Ports
 On all services HTTP ports are mapped to 3000, gRPC to 3100, WS to 3200.
+
+### Unit tests
+Account service supports unit tests. Run `pnpm run test` in Account service folder.

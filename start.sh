@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DOCKERFILE_DEV=docker-compose.yml
-DOCKERFILE_PROD=docker-compose.prod.yml
+DOCKERFILE_DEV=compose.yml
+DOCKERFILE_PROD=compose.prod.yml
 
 CMD=${1:-dev}
 
