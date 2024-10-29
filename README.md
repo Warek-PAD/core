@@ -55,18 +55,21 @@ and JSON as format.
 The two microservices provide enough functionality to support user authentication, having balance on their online card
 and transferring from one card to another and make payments.
 
-![System architecture](docs/images/pad-lab-1-services.webp)
+![System architecture](docs/images/pad-lab-1-services.png)
 
 ### Technology stack
 
-- Account service - JavaScript/NestJS framework
-- Transaction service - JavaScript/NestJS framework
+- Account service - JavaScript/NestJS framework, unit testing in Jest
 - Account service database - PostgreSQL
+- Transaction service - JavaScript/NestJS framework
 - Transaction service database - PostgreSQL
+- Data Warehouse database - PostgreSQL
+- ETL Service - C#/ASP.NET
 - Caching database - Redis
-- Gateway - C#/ASP.NET framework
-- Unit testing - Jest for JavaScript, xUnit for C#, unittest for python
-- Service discovery - Python 3/Flask framework
+- Gateway - C#/ASP.NET
+- Service discovery - C#/ASP.NET
+- Grafana
+- Prometheus
 
 ### Communication patterns
 
