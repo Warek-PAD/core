@@ -23,6 +23,7 @@ case $CMD in
   acc) compose "$DOCKERFILE_DEV" "account-service" ;;
   tran) compose "$DOCKERFILE_DEV" "transaction-service" ;;
   gtw) compose "$DOCKERFILE_DEV" "gateway" ;;
+  prom) compose "$DOCKERFILE_DEV" "prometheus" ;;
   sd) compose "$DOCKERFILE_DEV" "service-discovery" ;;
   prod) compose "$DOCKERFILE_PROD" ;;
   *)
