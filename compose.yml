@@ -33,17 +33,18 @@ services:
 
   account-service:
     depends_on:
-      - account-service-db
+      account-service-db:
+        condition: service_started
     build:
       context: ${ACCOUNT_SERVICE_PATH}
     env_file:
       - ${ACCOUNT_SERVICE_ENV_PATH}
     restart: no
-    scale: 3
-#    ports:
-#      - "3000:3000"
-#      - "3100:3100"
-#      - "3200:3200"
+    scale: 1
+    ports:
+      - "3000:3000"
+      - "3100:3100"
+      - "3200:3200"
     init: true
     networks:
       - ebank-network
@@ -64,7 +65,8 @@ services:
 
   transaction-service:
     depends_on:
-      - transaction-service-db
+      transaction-service-db:
+        condition: service_started
     build:
       context: ${TRANSACTION_SERVICE_PATH}
     env_file:
