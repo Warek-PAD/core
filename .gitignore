@@ -130,7 +130,4 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-.idea/*
-!.idea/dataSources
-!.idea/dataSources.xml
-!.idea/dataSources.local.xml
+.idea/
