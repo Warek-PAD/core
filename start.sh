@@ -11,16 +11,18 @@ compose() {
 
   if [ -z "$service" ]; then
     docker compose --file "$dockerfile" down
+    docker volume prune -f
     docker compose --file "$dockerfile" up --build --detach
   else
-    docker compose --file "$dockerfile" rm --force --stop --volumes "$service"
+    docker compose --file "$dockerfile" rm --force --stop "$service"
+    docker volume prune -f
     docker compose --file "$dockerfile" up --build --detach "$service"
   fi
 }
 
 case $CMD in
   dev) compose "$DOCKERFILE_DEV" ;;
-  acc) compose "$DOCKERFILE_DEV" "account-service" ;;
+  acc) compose "$DOCKERFILE_DEV" "account-service" "account-service-unhealthy" ;;
   tran) compose "$DOCKERFILE_DEV" "transaction-service" ;;
   gtw) compose "$DOCKERFILE_DEV" "gateway" ;;
   prom) compose "$DOCKERFILE_DEV" "prometheus" ;;

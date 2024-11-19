@@ -3,21 +3,83 @@ name: pad-ebank
 services:
    account-service-db:
       image: postgres:17-alpine
-      restart: no
-      ports: [ "${ACCOUNT_SERVICE_DB_PORT}:5432" ]
-      volumes: [ account-service-db-data:/var/lib/postgresql/data ]
+      user: postgres
       environment:
          POSTGRES_DB: account_db
          POSTGRES_USER: ${ACCOUNT_SERVICE_DB_USER}
          POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+         REPLICATION_USER: ${REPLICATION_USER}
+         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+      stop_grace_period: 2s
+      volumes:
+         - ./scripts/db/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh
+         - account-service-db-data:/var/lib/postgresql/data
       networks: [ ebank-network ]
+      ports: [ "5432:5432" ]
+
+   account-service-db-replica-1:
+      &account-service-db-replica-common
+      image: postgres:17-alpine
+      ports: [ "5433:5432" ]
+      user: postgres
+      stop_grace_period: 2s
+      environment:
+         PGUSER: ${REPLICATION_USER}
+         PGPASSWORD: ${REPLICATION_PASSWORD}
+         REPLICATION_USER: ${REPLICATION_USER}
+         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+         REPLICATION_SLOT: replication_slot_1
+      command: |
+         bash -c "
+           sleep 3s &&
+           until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=$$REPLICATION_SLOT --host=account-service-db --port=5432
+           do
+             echo 'Waiting for primary to connect...'
+             sleep 1s
+           done
+           echo 'Backup done, starting replica...'
+           chmod 0700 /var/lib/postgresql/data
+           postgres
+         "
+      networks: [ ebank-network ]
+      depends_on: [ account-service-db ]
+
+   account-service-db-replica-2:
+      <<: *account-service-db-replica-common
+      environment:
+         PGUSER: ${REPLICATION_USER}
+         PGPASSWORD: ${REPLICATION_PASSWORD}
+         REPLICATION_USER: ${REPLICATION_USER}
+         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+         REPLICATION_SLOT: replication_slot_2
+      ports: [ "5434:5432" ]
+
+   account-service-db-replica-3:
+      <<: *account-service-db-replica-common
+      environment:
+         PGUSER: ${REPLICATION_USER}
+         PGPASSWORD: ${REPLICATION_PASSWORD}
+         REPLICATION_USER: ${REPLICATION_USER}
+         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+         REPLICATION_SLOT: replication_slot_3
+      ports: [ "5435:5432" ]
+
+   transaction-service-db:
+      image: postgres:17-alpine
+      environment:
+         POSTGRES_DB: transaction_db
+         POSTGRES_USER: ${TRANSACTION_SERVICE_DB_USER}
+         POSTGRES_PASSWORD: ${TRANSACTION_SERVICE_DB_PASSWORD}
+      volumes:
+         - transaction-service-db-data:/var/lib/postgresql/data
+      networks: [ ebank-network ]
+      ports: [ "5436:5432" ]
 
    account-service:
       depends_on: [ account-service-db ]
       build:
          context: ${ACCOUNT_SERVICE_PATH}
       env_file: [ "${ACCOUNT_SERVICE_ENV_PATH}" ]
-      restart: no
       scale: 1
       ports: [ "3000:3000", "3100:3100", "3200:3200" ]
       init: true
@@ -28,7 +90,6 @@ services:
       build:
          context: ${ACCOUNT_SERVICE_PATH}
       env_file: [ "${ACCOUNT_SERVICE_ENV_PATH}" ]
-      restart: no
       init: true
       environment:
          UNHEALTHY: true
@@ -43,23 +104,11 @@ services:
       ports: [ "4000:3000", "4100:3100" ]
       networks: [ ebank-network ]
 
-   transaction-service-db:
-      image: postgres:17-alpine
-      restart: no
-      ports: [ "${TRANSACTION_SERVICE_DB_PORT}:5432" ]
-      volumes: [ transaction-service-db-data:/var/lib/postgresql/data ]
-      environment:
-         POSTGRES_DB: transaction_db
-         POSTGRES_USER: ${TRANSACTION_SERVICE_DB_USER}
-         POSTGRES_PASSWORD: ${TRANSACTION_SERVICE_DB_PASSWORD}
-      networks: [ ebank-network ]
-
    service-discovery:
       build:
          context: ${SERVICE_DISCOVERY_PATH}
          dockerfile: Dockerfile
       tty: true
-      restart: no
       env_file: [ "${SERVICE_DISCOVERY_ENV_PATH}" ]
       ports: [ "5000:3000" ]
       networks: [ ebank-network ]
@@ -69,14 +118,12 @@ services:
          context: ${GATEWAY_PATH}
          dockerfile: Dockerfile
       tty: true
-      restart: no
       env_file: [ "${GATEWAY_ENV_PATH}" ]
       ports: [ "7000:3000" ]
       networks: [ ebank-network ]
 
    prometheus:
       image: prom/prometheus
-      restart: no
       ports: [ "9090:9090" ]
       volumes:
          - ./config/prometheus/:/etc/prometheus/
@@ -85,7 +132,6 @@ services:
 
    grafana:
       image: grafana/grafana
-      restart: no
       ports: [ "10000:3000" ]
       volumes: [ grafana-data:/var/lib/grafana/ ]
       environment:
@@ -94,47 +140,34 @@ services:
       depends_on: [ prometheus ]
       networks: [ ebank-network ]
 
+
    redis-node-1:
+     &redis-master
       image: redis:alpine
       command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+      volumes: [ ./config/redis:/usr/local/etc/redis ]
+      networks: [ ebank-network ]
       ports: [ "6379:6379" ]
-      volumes: [ ./config/redis:/usr/local/etc/redis ]
-      networks: [ ebank-network ]
-
    redis-node-2:
-      image: redis:alpine
-      command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+      <<: *redis-master
       ports: [ "6380:6379" ]
-      volumes: [ ./config/redis:/usr/local/etc/redis ]
-      networks: [ ebank-network ]
-
    redis-node-3:
-      image: redis:alpine
-      command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+      <<: *redis-master
       ports: [ "6381:6379" ]
-      volumes: [ ./config/redis:/usr/local/etc/redis ]
-      networks: [ ebank-network ]
 
    redis-node-4:
+     &redis-slave
       image: redis:alpine
       command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD} --masterauth ${REDIS_PASSWORD}
+      volumes: [ ./config/redis:/usr/local/etc/redis ]
+      networks: [ ebank-network ]
       ports: [ "6382:6379" ]
-      volumes: [ ./config/redis:/usr/local/etc/redis ]
-      networks: [ ebank-network ]
-
    redis-node-5:
-      image: redis:alpine
-      command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD} --masterauth ${REDIS_PASSWORD}
+      <<: *redis-slave
       ports: [ "6383:6379" ]
-      volumes: [ ./config/redis:/usr/local/etc/redis ]
-      networks: [ ebank-network ]
-
    redis-node-6:
-      image: redis:alpine
-      command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD} --masterauth ${REDIS_PASSWORD}
+      <<: *redis-slave
       ports: [ "6384:6379" ]
-      volumes: [ ./config/redis:/usr/local/etc/redis ]
-      networks: [ ebank-network ]
 
    redis-cluster-creator:
       image: redis:alpine
