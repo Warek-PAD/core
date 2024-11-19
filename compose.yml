@@ -1,67 +1,106 @@
 name: pad-ebank
 
 services:
-   account-service-db:
-      image: postgres:17-alpine
-      user: postgres
-      environment:
-         POSTGRES_DB: account_db
-         POSTGRES_USER: ${ACCOUNT_SERVICE_DB_USER}
-         POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
-         REPLICATION_USER: ${REPLICATION_USER}
-         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
-      stop_grace_period: 2s
-      volumes:
-         - ./scripts/db/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh
-         - account-service-db-data:/var/lib/postgresql/data
-      networks: [ ebank-network ]
+   account-service-db-pool:
+      image: bitnami/pgpool:4
       ports: [ "5432:5432" ]
-
-   account-service-db-replica-1:
-      &account-service-db-replica-common
-      image: postgres:17-alpine
-      ports: [ "5433:5432" ]
-      user: postgres
-      stop_grace_period: 2s
       environment:
-         PGUSER: ${REPLICATION_USER}
-         PGPASSWORD: ${REPLICATION_PASSWORD}
-         REPLICATION_USER: ${REPLICATION_USER}
-         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
-         REPLICATION_SLOT: replication_slot_1
-      command: |
-         bash -c "
-           sleep 3s &&
-           until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=$$REPLICATION_SLOT --host=account-service-db --port=5432
-           do
-             echo 'Waiting for primary to connect...'
-             sleep 1s
-           done
-           echo 'Backup done, starting replica...'
-           chmod 0700 /var/lib/postgresql/data
-           postgres
-         "
+         - PGPOOL_BACKEND_NODES=0:account-service-db-node-1:5432,1:account-service-db-node-2:5432,2:account-service-db-node-3:5432
+         - PGPOOL_SR_CHECK_USER=${ACCOUNT_SERVICE_DB_USER}
+         - PGPOOL_SR_CHECK_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - PGPOOL_SR_CHECK_PERIOD=5
+         - PGPOOL_HEALTH_CHECK_PERIOD=3
+         - PGPOOL_HEALTH_CHECK_RETRY_DELAY=2
+         - PGPOOL_HEALTH_CHECK_MAX_RETRIES=1
+         - PGPOOL_HEALTH_CHECK_TIMEOUT=2
+         - PGPOOL_MAX_POOL=32
+         - PGPOOL_ENABLE_LDAP=no
+         - PGPOOL_POSTGRES_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - PGPOOL_POSTGRES_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - PGPOOL_ADMIN_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - PGPOOL_ADMIN_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - PGPOOL_ENABLE_LOAD_BALANCING=yes
+         - PGPOOL_POSTGRES_CUSTOM_USERS=${ACCOUNT_SERVICE_DB_USER}
+         - PGPOOL_POSTGRES_CUSTOM_PASSWORDS=${ACCOUNT_SERVICE_DB_PASSWORD}
+      healthcheck:
+         test: [ "CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh" ]
+         interval: 10s
+         timeout: 5s
+         retries: 2
+      depends_on:
+         - account-service-db-node-1
+         - account-service-db-node-2
+         - account-service-db-node-3
       networks: [ ebank-network ]
-      depends_on: [ account-service-db ]
 
-   account-service-db-replica-2:
-      <<: *account-service-db-replica-common
+   account-service-db-node-1:
+     &account-service-db-node-common
+      image: bitnami/postgresql-repmgr:16
       environment:
-         PGUSER: ${REPLICATION_USER}
-         PGPASSWORD: ${REPLICATION_PASSWORD}
-         REPLICATION_USER: ${REPLICATION_USER}
-         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
-         REPLICATION_SLOT: replication_slot_2
+         - POSTGRESQL_POSTGRES_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - POSTGRESQL_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - POSTGRESQL_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - POSTGRESQL_DATABASE=${ACCOUNT_SERVICE_DB_NAME}
+         - POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1
+         - REPMGR_PRIMARY_HOST=account-service-db-node-1
+         - REPMGR_PARTNER_NODES=account-service-db-node-1,account-service-db-node-2,account-service-db-node-3
+         - REPMGR_NODE_NAME=account-service-db-node-1
+         - REPMGR_NODE_NETWORK_NAME=account-service-db-node-1
+         - REPMGR_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - REPMGR_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - REPMGR_CONNECT_TIMEOUT=2
+         - REPMGR_RECONNECT_ATTEMPTS=1
+         - REPMGR_RECONNECT_INTERVAL=2
+         - REPMGR_MASTER_RESPONSE_TIMEOUT=5
+      volumes: [ account-service-db-node-1-data:/bitnami/postgresql ]
+      ports: [ "5433:5432" ]
+      networks: [ ebank-network ]
+      healthcheck:
+         test: [ "CMD-SHELL", "pg_isready -U ${ACCOUNT_SERVICE_DB_USER} -d ${ACCOUNT_SERVICE_DB_NAME} -h localhost" ]
+         interval: 10s
+         timeout: 5s
+         retries: 3
+
+   account-service-db-node-2:
+      <<: *account-service-db-node-common
+      environment:
+         - POSTGRESQL_POSTGRES_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - POSTGRESQL_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - POSTGRESQL_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - POSTGRESQL_DATABASE=${ACCOUNT_SERVICE_DB_NAME}
+         - POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1
+         - REPMGR_PRIMARY_HOST=account-service-db-node-1
+         - REPMGR_PARTNER_NODES=account-service-db-node-1,account-service-db-node-2,account-service-db-node-3
+         - REPMGR_NODE_NAME=account-service-db-node-2
+         - REPMGR_NODE_NETWORK_NAME=account-service-db-node-2
+         - REPMGR_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - REPMGR_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - REPMGR_CONNECT_TIMEOUT=2
+         - REPMGR_RECONNECT_ATTEMPTS=1
+         - REPMGR_RECONNECT_INTERVAL=2
+         - REPMGR_MASTER_RESPONSE_TIMEOUT=5
+      volumes: [ account-service-db-node-2-data:/bitnami/postgresql ]
       ports: [ "5434:5432" ]
 
-   account-service-db-replica-3:
-      <<: *account-service-db-replica-common
+   account-service-db-node-3:
+      <<: *account-service-db-node-common
       environment:
-         PGUSER: ${REPLICATION_USER}
-         PGPASSWORD: ${REPLICATION_PASSWORD}
-         REPLICATION_USER: ${REPLICATION_USER}
-         REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
-         REPLICATION_SLOT: replication_slot_3
+         - POSTGRESQL_POSTGRES_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - POSTGRESQL_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - POSTGRESQL_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - POSTGRESQL_DATABASE=${ACCOUNT_SERVICE_DB_NAME}
+         - POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1
+         - REPMGR_PRIMARY_HOST=account-service-db-node-1
+         - REPMGR_PARTNER_NODES=account-service-db-node-1,account-service-db-node-2,account-service-db-node-3
+         - REPMGR_NODE_NAME=account-service-db-node-3
+         - REPMGR_NODE_NETWORK_NAME=account-service-db-node-3
+         - REPMGR_USERNAME=${ACCOUNT_SERVICE_DB_USER}
+         - REPMGR_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
+         - REPMGR_CONNECT_TIMEOUT=2
+         - REPMGR_RECONNECT_ATTEMPTS=1
+         - REPMGR_RECONNECT_INTERVAL=2
+         - REPMGR_MASTER_RESPONSE_TIMEOUT=5
+      volumes: [ account-service-db-node-3-data:/bitnami/postgresql ]
       ports: [ "5435:5432" ]
 
    transaction-service-db:
@@ -76,7 +115,7 @@ services:
       ports: [ "5436:5432" ]
 
    account-service:
-      depends_on: [ account-service-db ]
+      depends_on: [ account-service-db-pool ]
       build:
          context: ${ACCOUNT_SERVICE_PATH}
       env_file: [ "${ACCOUNT_SERVICE_ENV_PATH}" ]
@@ -85,15 +124,15 @@ services:
       init: true
       networks: [ ebank-network ]
 
-   account-service-unhealthy:
-      depends_on: [ account-service-db ]
-      build:
-         context: ${ACCOUNT_SERVICE_PATH}
-      env_file: [ "${ACCOUNT_SERVICE_ENV_PATH}" ]
-      init: true
-      environment:
-         UNHEALTHY: true
-      networks: [ ebank-network ]
+   #   account-service-unhealthy:
+   #      depends_on: [ account-service-db ]
+   #      build:
+   #         context: ${ACCOUNT_SERVICE_PATH}
+   #      env_file: [ "${ACCOUNT_SERVICE_ENV_PATH}" ]
+   #      init: true
+   #      environment:
+   #         UNHEALTHY: true
+   #      networks: [ ebank-network ]
 
    transaction-service:
       depends_on: [ transaction-service-db ]
@@ -188,7 +227,9 @@ services:
       networks: [ ebank-network ]
 
 volumes:
-   account-service-db-data: { }
+   account-service-db-node-1-data: { }
+   account-service-db-node-2-data: { }
+   account-service-db-node-3-data: { }
    transaction-service-db-data: { }
    prometheus-data: { }
    grafana-data: { }
