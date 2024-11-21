@@ -36,6 +36,7 @@ message RegisterCredentials {
   string email = 1;
   string password = 2;
   string full_name = 3;
+  int64 created_at = 4;
 }
 
 message GetProfileOptions {
@@ -45,6 +46,7 @@ message GetProfileOptions {
 message Profile {
   string email = 1;
   string full_name = 2;
+  int64 created_at = 4;
 }
 
 message GetProfileResult {
@@ -55,7 +57,7 @@ message GetProfileResult {
 }
 
 message AddCurrencyOptions {
-  shared.Currency currency = 1;
+  string currency = 1;
   int32 amount = 2;
   string card_code = 3;
 }
@@ -65,7 +67,7 @@ message AddCurrencyResult {
 }
 
 message TransactionData {
-  shared.Currency currency = 1;
+  string currency = 1;
   int32 amount = 2;
   string card_code = 3;
 }
@@ -78,7 +80,7 @@ message CanPerformTransactionResult {
 }
 
 message ChangeCurrencyOptions {
-  shared.Currency currency = 1;
+  string currency = 1;
   string card_code = 2;
 }
 

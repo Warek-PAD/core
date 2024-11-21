@@ -5,32 +5,36 @@ services:
       image: bitnami/pgpool:4
       ports: [ "5432:5432" ]
       environment:
-         - PGPOOL_BACKEND_NODES=0:account-service-db-node-1:5432,1:account-service-db-node-2:5432,2:account-service-db-node-3:5432
-         - PGPOOL_SR_CHECK_USER=${ACCOUNT_SERVICE_DB_USER}
-         - PGPOOL_SR_CHECK_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
-         - PGPOOL_SR_CHECK_PERIOD=5
-         - PGPOOL_HEALTH_CHECK_PERIOD=3
-         - PGPOOL_HEALTH_CHECK_RETRY_DELAY=2
-         - PGPOOL_HEALTH_CHECK_MAX_RETRIES=1
-         - PGPOOL_HEALTH_CHECK_TIMEOUT=2
-         - PGPOOL_MAX_POOL=32
-         - PGPOOL_ENABLE_LDAP=no
-         - PGPOOL_POSTGRES_USERNAME=${ACCOUNT_SERVICE_DB_USER}
-         - PGPOOL_POSTGRES_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
-         - PGPOOL_ADMIN_USERNAME=${ACCOUNT_SERVICE_DB_USER}
-         - PGPOOL_ADMIN_PASSWORD=${ACCOUNT_SERVICE_DB_PASSWORD}
-         - PGPOOL_ENABLE_LOAD_BALANCING=yes
-         - PGPOOL_POSTGRES_CUSTOM_USERS=${ACCOUNT_SERVICE_DB_USER}
-         - PGPOOL_POSTGRES_CUSTOM_PASSWORDS=${ACCOUNT_SERVICE_DB_PASSWORD}
+         PGPOOL_BACKEND_NODES: 0:account-service-db-node-1:5432,1:account-service-db-node-2:5432,2:account-service-db-node-3:5432
+         PGPOOL_SR_CHECK_USER: ${ACCOUNT_SERVICE_DB_USER}
+         PGPOOL_SR_CHECK_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+         PGPOOL_SR_CHECK_PERIOD: 5
+         PGPOOL_HEALTH_CHECK_PERIOD: 3
+         PGPOOL_HEALTH_CHECK_RETRY_DELAY: 2
+         PGPOOL_HEALTH_CHECK_MAX_RETRIES: 1
+         PGPOOL_HEALTH_CHECK_TIMEOUT: 2
+         PGPOOL_MAX_POOL: 32
+         PGPOOL_ENABLE_LDAP: no
+         PGPOOL_POSTGRES_USERNAME: ${ACCOUNT_SERVICE_DB_USER}
+         PGPOOL_POSTGRES_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+         PGPOOL_ADMIN_USERNAME: ${ACCOUNT_SERVICE_DB_USER}
+         PGPOOL_ADMIN_PASSWORD: ${ACCOUNT_SERVICE_DB_PASSWORD}
+         PGPOOL_ENABLE_LOAD_BALANCING: yes
+         PGPOOL_POSTGRES_CUSTOM_USERS: ${ACCOUNT_SERVICE_DB_USER}
+         PGPOOL_POSTGRES_CUSTOM_PASSWORDS: ${ACCOUNT_SERVICE_DB_PASSWORD}
       healthcheck:
-         test: [ "CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh" ]
-         interval: 10s
+         test: [ "CMD-SHELL", "/opt/bitnami/scripts/pgpool/healthcheck.sh" ]
+         interval: 30s
          timeout: 5s
+         start_period: 10s
          retries: 2
       depends_on:
-         - account-service-db-node-1
-         - account-service-db-node-2
-         - account-service-db-node-3
+         account-service-db-node-1:
+            condition: service_started
+         account-service-db-node-2:
+            condition: service_started
+         account-service-db-node-3:
+            condition: service_started
       networks: [ ebank-network ]
 
    account-service-db-node-1:
@@ -57,8 +61,9 @@ services:
       networks: [ ebank-network ]
       healthcheck:
          test: [ "CMD-SHELL", "pg_isready -U ${ACCOUNT_SERVICE_DB_USER} -d ${ACCOUNT_SERVICE_DB_NAME} -h localhost" ]
-         interval: 10s
+         interval: 30s
          timeout: 5s
+         start_period: 10s
          retries: 3
 
    account-service-db-node-2:
@@ -125,11 +130,11 @@ services:
       init: true
       networks: [ ebank-network ]
 
-   account-service-unhealthy:
-      <<: *account-service-common
-      environment:
-         UNHEALTHY: true
-      ports: [ ]
+#   account-service-unhealthy:
+#      <<: *account-service-common
+#      environment:
+#         UNHEALTHY: true
+#      ports: [ ]
 
    transaction-service:
       depends_on: [ transaction-service-db ]
@@ -223,6 +228,28 @@ services:
          - redis-node-6
       networks: [ ebank-network ]
 
+   data-warehouse-db:
+      image: postgres:17-alpine
+      environment:
+         POSTGRES_DB: ${DATA_WAREHOUSE_DB_NAME}
+         POSTGRES_USER: ${DATA_WAREHOUSE_DB_USER}
+         POSTGRES_PASSWORD: ${DATA_WAREHOUSE_DB_PASSWORD}
+      volumes: [ data-warehouse-db-data:/var/lib/postgresql/data ]
+      ports: [ "5437:5432" ]
+      networks: [ ebank-network ]
+
+#   etl-service:
+#      build:
+#         context: ${ETL_SERVICE_PATH}
+#      env_file: [ "${ETL_SERVICE_ENV_PATH}" ]
+#      ports: [ "11000:3000" ]
+#      networks: [ ebank-network ]
+#      depends_on:
+#         - data-warehouse-db
+#         - account-service-db-pool
+#         - transaction-service-db
+
+
 volumes:
    account-service-db-node-1-data: { }
    account-service-db-node-2-data: { }
@@ -230,6 +257,7 @@ volumes:
    transaction-service-db-data: { }
    prometheus-data: { }
    grafana-data: { }
+   data-warehouse-db-data: { }
 
 networks:
    ebank-network: { }

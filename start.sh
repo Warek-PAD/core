@@ -10,8 +10,7 @@ compose() {
   local service=$2
 
   if [ -z "$service" ]; then
-    docker compose --file "$dockerfile" down
-    docker volume prune -f
+    docker compose --file "$dockerfile" down -v
     docker compose --file "$dockerfile" up --build --detach
   else
     docker compose --file "$dockerfile" rm --force --stop "$service"
@@ -27,6 +26,7 @@ case $CMD in
   gtw) compose "$DOCKERFILE_DEV" "gateway" ;;
   prom) compose "$DOCKERFILE_DEV" "prometheus" ;;
   sd) compose "$DOCKERFILE_DEV" "service-discovery" ;;
+  etl) compose "$DOCKERFILE_DEV" "etl-service" ;;
   prod) compose "$DOCKERFILE_PROD" ;;
   *)
     echo "Unknown command"
